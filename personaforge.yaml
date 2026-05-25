@@ -1,0 +1,20 @@
+name: telecom-refund-agent
+
+agent:
+  provider: elevenlabs
+  agent_id: YOUR_AGENT_ID
+
+policy:
+  file: policies/refund.md
+
+execution:
+  conversations: 1
+  concurrency: 1
+
+personas:
+  - angry_customer
+
+evaluation:
+  hallucination_threshold: 5
+  escalation_threshold: 90
+  completion_threshold: 95

@@ -1,0 +1,11 @@
+fastapi
+sqlmodel
+asyncpg
+pydantic
+websockets
+httpx
+python-dotenv
+rq
+redis
+click
+sqlalchemy[asyncio]
