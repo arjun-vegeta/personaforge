@@ -2,6 +2,8 @@ fastapi
 sqlmodel
 asyncpg
 pydantic
+pydantic-settings
+google-genai
 websockets
 httpx
 python-dotenv

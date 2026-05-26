@@ -23,9 +23,24 @@ class Scenario(SQLModel, table=True):
 
     conversations: List["Conversation"] = Relationship(back_populates="scenario")
 
+class TestRun(SQLModel, table=True):
+    __tablename__ = "test_runs"
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    scenario_name: str
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    ended_at: Optional[datetime] = Field(default=None)
+    total_conversations: int = Field(default=0)
+    passed_conversations: int = Field(default=0)
+    failed_conversations: int = Field(default=0)
+    total_cost: float = Field(default=0.0)
+    status: str = Field(default="pending") # pending, active, completed, failed
+
+    conversations: List["Conversation"] = Relationship(back_populates="test_run")
+
 class Conversation(SQLModel, table=True):
     __tablename__ = "conversations"
     id: UUID = Field(default_factory=uuid4, primary_key=True)
+    test_run_id: Optional[UUID] = Field(default=None, foreign_key="test_runs.id")
     scenario_id: Optional[UUID] = Field(default=None, foreign_key="scenarios.id")
     agent_id: Optional[UUID] = Field(default=None, foreign_key="agents.id")
     persona_id: Optional[str] = Field(default=None) # Persona ID from YAML or DB
@@ -43,8 +58,9 @@ class Conversation(SQLModel, table=True):
     error_message: Optional[str] = None
     retry_count: int = Field(default=0)
 
+    test_run: Optional[TestRun] = Relationship(back_populates="conversations")
     agent: Optional[Agent] = Relationship(back_populates="conversations")
-    scenario: Optional[Scenario] = Relationship(back_populates="scenario")
+    scenario: Optional[Scenario] = Relationship(back_populates="conversations")
     messages: List["Message"] = Relationship(back_populates="conversation")
     evaluations: List["Evaluation"] = Relationship(back_populates="conversation")
 

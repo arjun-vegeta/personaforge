@@ -1,18 +1,11 @@
-name: telecom-refund-agent
-
+name: default-project
 agent:
   provider: elevenlabs
   agent_id: YOUR_AGENT_ID
 
-policy:
-  file: policies/refund.md
-
 execution:
-  conversations: 1
-  concurrency: 1
-
-personas:
-  - angry_customer
+  conversations: 5
+  concurrency: 2
 
 evaluation:
   hallucination_threshold: 5
