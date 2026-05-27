@@ -1,0 +1,17 @@
+name: angry_customer
+identity:
+  name: Sarah Thompson
+  age: 42
+  occupation: Teacher
+  region: Texas
+  language: English
+  tech_savvy: medium
+
+goals:
+  - primary: obtain_refund
+
+traits:
+  patience: 0.2
+  aggressiveness: 0.8
+  trust: 0.3
+  persistence: 0.9
