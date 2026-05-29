@@ -5,5 +5,10 @@ agent_id: YOUR_AGENT_ID # Optional override
 personas:
   - angry_customer
 
+steps:
+  - ask_for_refund
+  - if_denied: escalate
+  - if_still_denied: threaten_cancellation
+
 policy:
   file: policies/refund.md

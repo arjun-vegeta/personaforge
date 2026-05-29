@@ -1,6 +1,9 @@
 import asyncio
 import uuid
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from personaforge.backend.app.personas.engine import Persona, Identity, Traits, Goal, PersonaEngine
 from personaforge.backend.app.judge.evaluator import JudgeEngine
 
