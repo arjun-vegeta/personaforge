@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: personaforge
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@db/personaforge
+      REDIS_URL: redis://redis:6379
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    command: python3 personaforge/backend/app/cli/main.py worker
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@db/personaforge
+      REDIS_URL: redis://redis:6379
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+    depends_on:
+      - db
+      - redis
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
