@@ -11,3 +11,7 @@ rq
 redis
 click
 sqlalchemy[asyncio]
+uvicorn
+gunicorn
+PyYAML
+aiosqlite

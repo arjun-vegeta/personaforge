@@ -7,13 +7,13 @@ import yaml
 import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from ..integrations.elevenlabs import ElevenLabsProvider
-from ..personas.engine import PersonaEngine, Persona, Identity, Goal, Traits
-from ..runner.runner import ConversationRunner
-from ..runner.orchestrator import TestOrchestrator
-from ..judge.evaluator import JudgeEngine
-from ..database.connection import init_db, get_session
-from ..database.models import TestRun, Conversation as DBConversation, Evaluation as DBEvaluation
+from personaforge.backend.app.integrations.elevenlabs import ElevenLabsProvider
+from personaforge.backend.app.personas.engine import PersonaEngine, Persona, Identity, Goal, Traits
+from personaforge.backend.app.runner.runner import ConversationRunner
+from personaforge.backend.app.runner.orchestrator import TestOrchestrator
+from personaforge.backend.app.judge.evaluator import JudgeEngine
+from personaforge.backend.app.database.connection import init_db, get_session
+from personaforge.backend.app.database.models import TestRun, Conversation as DBConversation, Evaluation as DBEvaluation
 
 @click.group()
 def cli():
@@ -162,7 +162,7 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
         orchestrator = TestOrchestrator(concurrency=concurrency)
         
         if dry_run:
-            from ..judge.evaluator import EvaluationResult
+            from personaforge.backend.app.judge.evaluator import EvaluationResult
             class MockJudge:
                 async def evaluate_conversation(self, **kwargs):
                     return EvaluationResult(
@@ -187,7 +187,7 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
                 p_data = load_persona(p_name)
                 
                 if dry_run:
-                    from ..personas.engine import PersonaEngine, BehaviorAction, BehaviorActionType
+                    from personaforge.backend.app.personas.engine import PersonaEngine, BehaviorAction, BehaviorActionType
                     class MockPersonaEngine(PersonaEngine):
                         async def update_state(self, *args, **kwargs): pass
                         async def determine_action(self, *args, **kwargs):
@@ -196,7 +196,7 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
                             return "Mock customer response."
                     engine = MockPersonaEngine(p_data)
                     
-                    from ..integrations.base import VoiceAgentProvider
+                    from personaforge.backend.app.integrations.base import VoiceAgentProvider
                     class MockProvider(VoiceAgentProvider):
                         async def connect(self, agent_id: str): pass
                         async def disconnect(self): pass
@@ -228,11 +228,19 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
         results = []
         
         for runner in runners:
+            # Gather voice metrics metadata
+            metadata = {
+                "avg_latency": sum(runner.total_latencies) / len(runner.total_latencies) if runner.total_latencies else 0,
+                "interruption_count": runner.interruption_count,
+                "interruption_recovery_count": runner.interruption_recovery_count
+            }
+            
             eval_result = await judge.evaluate_conversation(
                 conversation_id=runner.conversation_id,
                 history=runner.history,
                 policy_doc=policy_content,
-                scenario_config=scenario
+                scenario_config=scenario,
+                metadata=metadata
             )
             
             tts_chars = sum(len(m["content"]) for m in runner.history if m["role"] == "agent")
@@ -247,6 +255,7 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
                 "persona": runner.persona_engine.persona.name,
                 "history": runner.history,
                 "evaluation": eval_result.model_dump(),
+                "metrics": metadata,
                 "cost": {
                     "tts": (tts_chars / 1000) * 0.30,
                     "stt": (stt_chars / 1000) * 0.20,
@@ -264,6 +273,10 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
                     db_conv.stt_cost = res_data["cost"]["stt"]
                     db_conv.llm_cost = res_data["cost"]["llm"]
                     db_conv.total_cost = conv_cost
+                    # Update voice metrics in DB
+                    db_conv.avg_latency = metadata["avg_latency"]
+                    db_conv.interruption_count = metadata["interruption_count"]
+                    db_conv.interruption_recovery_count = metadata["interruption_recovery_count"]
                     db_session.add(db_conv)
                     
                     db_eval = DBEvaluation(
@@ -272,6 +285,7 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
                         hallucination_detected=any(f.category == "hallucination" for f in eval_result.failures),
                         escalation_failure=any(f.category == "escalation" for f in eval_result.failures),
                         completion_failure=any(f.category == "completion" for f in eval_result.failures),
+                        interruption_recovery_rate=eval_result.interruption_recovery_rate,
                         severity="high" if not eval_result.pass_status else "low"
                     )
                     db_session.add(db_eval)
@@ -679,7 +693,7 @@ def ci(scenario):
             if not r["evaluation"]["pass_status"]:
                 click.echo(f"\nConversation: {r['conversation_id']} (Persona: {r['persona']})")
                 for fail in r["evaluation"]["failures"]:
-                    click.echo(f"  - [{fail['category'].upper()}] {fail['description']}")
+                    click.echo(f"  - [{fail['category'].upper()}] {fail['reason']}")
                     if "evidence" in fail:
                         click.echo(f"    Evidence: {fail['evidence']}")
         sys.exit(1)

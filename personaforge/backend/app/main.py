@@ -2,12 +2,12 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import select, func, desc
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import uuid
 from datetime import datetime, timedelta
 
-from .database.connection import get_session, init_db
-from .database.models import TestRun, Conversation, Message, Evaluation
+from personaforge.backend.app.database.connection import get_session, init_db
+from personaforge.backend.app.database.models import TestRun, Conversation, Message, Evaluation
 
 app = FastAPI(title="PersonaForge API")
 
@@ -163,21 +163,42 @@ async def get_global_stats(session: AsyncSession = Depends(get_session)):
 @app.get("/api/agent-health")
 async def get_agent_health(session: AsyncSession = Depends(get_session)):
     # Group by scenario/agent to show health trends
-    # Simplified: return last 10 runs metrics
     statement = select(TestRun).order_by(desc(TestRun.started_at)).limit(10)
     results = await session.execute(statement)
     runs = results.scalars().all()
     
-    return [
-        {
+    health_metrics = []
+    for i, run in enumerate(reversed(runs)):
+        # Calculate rates for this run
+        total = run.total_conversations
+        pass_rate = (run.passed_conversations / total * 100) if total > 0 else 0
+        
+        # Aggregate failures from this run
+        eval_statement = select(Evaluation).join(Conversation).where(Conversation.test_run_id == run.id)
+        eval_results = await session.execute(eval_statement)
+        evals = eval_results.scalars().all()
+        
+        hallucination_count = sum(1 for e in evals if e.hallucination_detected)
+        escalation_failure_count = sum(1 for e in evals if e.escalation_failure)
+        
+        hallucination_rate = (hallucination_count / total * 100) if total > 0 else 0
+        escalation_rate = ((total - escalation_failure_count) / total * 100) if total > 0 else 100
+        
+        # Avg Latency for the run
+        avg_latency = run.total_cost / total if total > 0 else 0 # This is a placeholder for cost, let's use actual latency if we have it aggregated
+        # Better: calculate from conversations
+        latency_statement = select(func.avg(Conversation.avg_latency)).where(Conversation.test_run_id == run.id)
+        avg_latency = (await session.execute(latency_statement)).scalar() or 0.0
+
+        health_metrics.append({
             "version": f"v1.0.{i}",
-            "completion_rate": (run.passed_conversations / run.total_conversations * 100) if run.total_conversations > 0 else 0,
-            "hallucination_rate": 2.5, # Placeholder
-            "escalation_rate": 92.0, # Placeholder
-            "avg_latency": 1.4 # Placeholder
-        }
-        for i, run in enumerate(reversed(runs))
-    ]
+            "completion_rate": pass_rate,
+            "hallucination_rate": hallucination_rate,
+            "escalation_rate": escalation_rate,
+            "avg_latency": float(avg_latency)
+        })
+    
+    return health_metrics
 
 @app.get("/api/persona-performance")
 async def get_persona_performance(session: AsyncSession = Depends(get_session)):
@@ -185,32 +206,27 @@ async def get_persona_performance(session: AsyncSession = Depends(get_session)):
     statement = select(
         Conversation.persona_id,
         func.count(Conversation.id).label("total"),
-        func.sum(Conversation.total_cost).label("cost")
+        func.avg(Conversation.avg_latency).label("latency")
     ).group_by(Conversation.persona_id)
     
     results = (await session.execute(statement)).all()
     
     performance = []
     for row in results:
-        # For each persona, calculate pass rate
-        pass_statement = select(func.count(Conversation.id)).where(
+        # Calculate pass rate for this persona
+        eval_statement = select(func.count(Evaluation.id)).join(Conversation).where(
             Conversation.persona_id == row.persona_id,
-            # This logic is a bit complex for a single query without nested joins/subqueries in SQLModel
-            # So we'll fetch evaluations separately or use a simpler metric for POC
+            Evaluation.severity == "low" # Simplified: "low" severity means it passed
         )
+        passed_count = (await session.execute(eval_statement)).scalar() or 0
         
-        # Simplified: Mock some variety based on persona name
-        pass_rate = 95.0
-        if row.persona_id and "angry" in row.persona_id.lower():
-            pass_rate = 72.5
-        elif row.persona_id and "confused" in row.persona_id.lower():
-            pass_rate = 88.0
+        pass_rate = (passed_count / row.total * 100) if row.total > 0 else 0
             
         performance.append({
             "name": row.persona_id or "Unknown",
             "pass_rate": pass_rate,
             "total_runs": row.total,
-            "avg_latency": 1.3
+            "avg_latency": float(row.latency or 0.0)
         })
         
     return performance
