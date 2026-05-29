@@ -3,14 +3,16 @@ import json
 import base64
 import asyncio
 import websockets
-from typing import AsyncIterator, Any, Optional
-from .base import VoiceAgentProvider
+import httpx
+from typing import AsyncIterator, Any, Optional, Dict
+from personaforge.backend.app.integrations.base import VoiceAgentProvider
 
 class ElevenLabsProvider(VoiceAgentProvider):
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("ELEVENLABS_API_KEY")
         self.ws: Optional[websockets.WebSocketClientProtocol] = None
         self.agent_id: Optional[str] = None
+        self.http_client = httpx.AsyncClient(headers={"xi-api-key": self.api_key} if self.api_key else {})
 
     async def connect(self, agent_id: str, **kwargs) -> None:
         self.agent_id = agent_id
@@ -34,11 +36,13 @@ class ElevenLabsProvider(VoiceAgentProvider):
         if self.ws:
             await self.ws.close()
             self.ws = None
+        await self.http_client.aclose()
 
     async def send_audio(self, audio_bytes: bytes) -> None:
         if not self.ws:
             raise RuntimeError("Not connected")
         
+        # Audio must be Base64 encoded PCM (16-bit, 16kHz, Mono)
         message = {
             "type": "user_audio_chunk",
             "user_audio_chunk": base64.b64encode(audio_bytes).decode("utf-8")
@@ -60,4 +64,33 @@ class ElevenLabsProvider(VoiceAgentProvider):
             raise RuntimeError("Not connected")
         
         async for message in self.ws:
-            yield json.loads(message)
+            data = json.loads(message)
+            # Automatic pong handling
+            if data.get("type") == "ping":
+                event_id = data.get("ping_event", {}).get("event_id")
+                await self.ws.send(json.dumps({
+                    "type": "pong",
+                    "event_id": event_id
+                }))
+            yield data
+
+    async def text_to_speech(self, text: str, voice_id: str = "21m00Tcm4TlvDq8ikWAM") -> bytes:
+        """Convert text to PCM audio using ElevenLabs TTS API."""
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
+        
+        # Request PCM 16kHz for compatibility with ConvAI
+        params = {"output_format": "pcm_16000"}
+        data = {
+            "text": text,
+            "model_id": "eleven_flash_v2_5",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.8
+            }
+        }
+        
+        response = await self.http_client.post(url, json=data, params=params)
+        if response.status_code != 200:
+            raise Exception(f"TTS Error: {response.text}")
+            
+        return response.content

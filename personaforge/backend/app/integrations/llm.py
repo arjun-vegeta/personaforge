@@ -5,7 +5,7 @@ from google import genai
 from google.genai import types
 
 class LLMClient:
-    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.1-flash-lite-preview"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gemini-3.1-flash-lite"):
         self.api_key = api_key or os.getenv("GOOGLE_API_KEY")
         self.model_name = model
         self._client: Optional[genai.Client] = None
