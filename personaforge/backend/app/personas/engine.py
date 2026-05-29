@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
-from ..integrations.llm import LLMClient
+from personaforge.backend.app.integrations.llm import LLMClient
 
 class BehaviorActionType(str, Enum):
     ASK_QUESTION = "ASK_QUESTION"
@@ -83,9 +83,9 @@ class PersonaEngine:
 
     async def update_state(self, last_agent_message: str, classification: Optional[str] = None, scenario_config: Optional[Dict[str, Any]] = None):
         """Update emotional state, memory, and stage based on agent message and scenario logic."""
-        # 1. Classify agent message
+        # 1. Classify agent message if not provided
         if not classification:
-            system_prompt = "Classify the following agent message as: 'helpful', 'denied', 'confusing', or 'identity_verified'."
+            system_prompt = "Classify the following agent message as: 'helpful', 'denied', 'confusing', 'identity_verified', or 'escalation_denied'."
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": last_agent_message}
@@ -97,26 +97,37 @@ class PersonaEngine:
         # 2. Update emotions mathematically
         self.persona.emotion.update(classification, self.persona.traits)
         
-        # 3. Update memory and progress stages
+        # 3. Update memory
         if "denied" in classification:
             denials = self.persona.memory.get("refund_denials", 0)
             self.persona.memory["refund_denials"] = denials + 1
         elif "identity_verified" in classification:
-            self.persona.current_stage = "CORE_GOAL"
+            self.persona.memory["identity_verified"] = True
+            if self.persona.current_stage in ["GREETING", "VERIFY_IDENTITY"]:
+                self.persona.current_stage = "CORE_GOAL"
 
-        # 4. Handle Scenario Logic
+        # 4. Handle Advanced Scenario Logic (Part 4 requirement)
         if scenario_config and "logic" in scenario_config:
             logic = scenario_config["logic"]
+            
+            # Example: if_refund_denied_twice: ESCALATE
             denials = self.persona.memory.get("refund_denials", 0)
             
-            if "if_refund_denied_twice" in logic and denials >= 2:
-                self.persona.current_stage = logic["if_refund_denied_twice"].upper()
-            
-            if "if_refund_granted" in logic and "granted" in last_agent_message.lower():
-                self.persona.current_stage = "EXIT"
-                
-            if "if_escalation_denied" in logic and "cannot speak to a supervisor" in last_agent_message.lower():
-                 self.persona.current_stage = "THREATEN_CANCELLATION"
+            for condition, next_stage in logic.items():
+                if condition == "if_refund_denied_twice" and denials >= 2:
+                    self.persona.current_stage = next_stage.upper()
+                elif condition == "if_escalation_denied" and "escalation_denied" in classification:
+                    self.persona.current_stage = next_stage.upper()
+                elif condition == "if_refund_granted" and "helpful" in classification:
+                    self.persona.current_stage = next_stage.upper()
+                elif condition == "if_identity_verified" and self.persona.memory.get("identity_verified"):
+                    self.persona.current_stage = next_stage.upper()
+
+        # 5. Goal completion check
+        if self.persona.current_stage == "EXIT":
+            for goal in self.persona.goals:
+                if "helpful" in classification:
+                    goal.completed = True
 
     async def determine_action(self, conversation_history: List[Dict[str, str]], scenario_steps: List[Any] = None) -> BehaviorAction:
         """Step 1: Select the next behavioral action based on state, stage, and scenario steps."""
