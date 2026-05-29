@@ -146,3 +146,13 @@ cython_debug/
 
 # PyCharm
 .idea/
+
+# PersonaForge specific
+personaforge.db
+artifacts/
+reports/
+.agents/
+.DS_Store
+.gemini/
+*.log
+
