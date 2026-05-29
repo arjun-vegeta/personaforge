@@ -10,6 +10,8 @@ def runner_deps(mocker):
     provider.connect = AsyncMock()
     provider.disconnect = AsyncMock()
     provider.send_text = AsyncMock()
+    provider.send_audio = AsyncMock()
+    provider.text_to_speech = AsyncMock(return_value=b"fake_audio")
     provider.receive_events = AsyncMock()
     
     persona_engine = Mock()
@@ -48,7 +50,7 @@ async def test_runner_handle_agent_response(runner_deps):
     assert persona_engine.update_state.called
     assert persona_engine.determine_action.called
     assert persona_engine.generate_utterance.called
-    provider.send_text.assert_called_with("Hello back")
+    assert provider.send_audio.called
     assert len(runner.history) == 2 # agent + customer
 
 @pytest.mark.asyncio

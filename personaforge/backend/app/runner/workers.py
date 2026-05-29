@@ -4,10 +4,10 @@ import yaml
 import os
 import json
 from datetime import datetime
-from ..personas.engine import PersonaEngine, Persona
-from ..runner.runner import ConversationRunner
-from ..integrations.elevenlabs import ElevenLabsProvider
-from ..judge.evaluator import JudgeEngine
+from personaforge.backend.app.personas.engine import PersonaEngine, Persona
+from personaforge.backend.app.runner.runner import ConversationRunner
+from personaforge.backend.app.integrations.elevenlabs import ElevenLabsProvider
+from personaforge.backend.app.judge.evaluator import JudgeEngine
 
 async def _run_conversation_internal(scenario_config, persona_name, agent_id, dry_run=False):
     """Internal async implementation of run_conversation_task."""
@@ -23,7 +23,7 @@ async def _run_conversation_internal(scenario_config, persona_name, agent_id, dr
     engine = PersonaEngine(persona)
     
     if dry_run:
-        from ..integrations.base import VoiceAgentProvider
+        from personaforge.backend.app.integrations.base import VoiceAgentProvider
         class MockProvider(VoiceAgentProvider):
             async def connect(self, agent_id: str): pass
             async def disconnect(self): pass

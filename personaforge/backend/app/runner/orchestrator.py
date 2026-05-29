@@ -1,8 +1,8 @@
 import asyncio
 from typing import List, Dict, Any
-from .runner import ConversationRunner
-from ..integrations.base import VoiceAgentProvider
-from ..personas.engine import PersonaEngine
+from personaforge.backend.app.runner.runner import ConversationRunner
+from personaforge.backend.app.integrations.base import VoiceAgentProvider
+from personaforge.backend.app.personas.engine import PersonaEngine
 
 class TestOrchestrator:
     def __init__(self, concurrency: int = 10):
