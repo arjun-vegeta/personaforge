@@ -54,6 +54,12 @@ class Conversation(SQLModel, table=True):
     llm_cost: float = Field(default=0.0)
     total_cost: float = Field(default=0.0)
 
+    # Voice Specific Metrics (Part 5 Requirement)
+    interruption_count: int = Field(default=0)
+    interruption_recovery_count: int = Field(default=0)
+    avg_latency: float = Field(default=0.0)
+    accent: Optional[str] = Field(default=None)
+
     # Recovery and Error Info
     error_message: Optional[str] = None
     retry_count: int = Field(default=0)
@@ -86,6 +92,11 @@ class Evaluation(SQLModel, table=True):
     hallucination_detected: bool = Field(default=False)
     escalation_failure: bool = Field(default=False)
     completion_failure: bool = Field(default=False)
+    
+    # Voice Specific Metrics (Part 5 Requirement)
+    interruption_recovery_rate: float = Field(default=0.0)
+    accent_robustness_score: float = Field(default=0.0)
+    
     severity: str = Field(default="low") # low, medium, high, critical
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
