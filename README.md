@@ -29,6 +29,16 @@ Build Agent -> 1,000 Synthetic Customers -> Failure Detection -> Deploy Safely
 - **CI/CD Integration:** Built-in quality gates for your deployment pipeline.
 - **Studio (Dashboard):** Visualize regressions, explore failure clusters, and replay conversations turn-by-turn.
 
+## Documentation
+
+Comprehensive user guides are available in the `docs/` directory:
+* [getting-started.md](docs/getting-started.md): Setup, prerequisites, and first test run guide.
+* [configuration-guide.md](docs/configuration-guide.md): Structural parameter explanations for YAML/Markdown DSL configurations.
+* [cli-commands.md](docs/cli-commands.md): Complete CLI command options, syntax, and behaviors.
+* [dashboard-studio.md](docs/dashboard-studio.md): Startup commands for server and web services, metrics walkthrough, and database details.
+* [ci-cd-integration.md](docs/ci-cd-integration.md): Steps to add secrets and design pipeline checks.
+* [troubleshooting.md](docs/troubleshooting.md): Solutions for common database lock issues, WebSocket error codes, and rate limits.
+
 ## Quick Start
 
 ### 1. Installation
