@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import AsyncIterator, Any
 
+
 class VoiceAgentProvider(ABC):
     @abstractmethod
     async def connect(self, agent_id: str, **kwargs) -> None:
