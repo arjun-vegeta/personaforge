@@ -124,3 +124,48 @@ Policies are plain Markdown files listing business rules, compliance instruction
      - The customer asks to speak to a manager, supervisor, or human representative.
      - The customer asks for a refund more than two times after being denied.
 ```
+
+---
+
+## 5. Custom Voice Providers
+
+By default, PersonaForge comes with:
+- **`MockProvider`**: Runs in dry-run mode (`--dry-run`), allowing you to test configurations, state machines, and LLM behaviors without any ElevenLabs subscription or API charges.
+- **`ElevenLabsProvider`**: Uses ElevenLabs Conversational AI WebSockets for real-time live runs.
+
+### Implementing a Custom Provider
+
+If you wish to test an agent over a custom API, standard HTTP webhooks, or another provider (e.g. Vapi, Retell, LiveKit), you can subclass the `VoiceAgentProvider` interface:
+
+```python
+from typing import AsyncIterator, Any
+from personaforge.backend.app.integrations.base import VoiceAgentProvider
+
+class MyCustomProvider(VoiceAgentProvider):
+    async def connect(self, agent_id: str, **kwargs) -> None:
+        # Establish connection (e.g., HTTP Webhook, WebSocket, etc.)
+        pass
+
+    async def disconnect(self) -> None:
+        # Clean up connections
+        pass
+
+    async def send_audio(self, audio_bytes: bytes) -> None:
+        # Send synthetic customer audio chunks to your agent
+        pass
+
+    async def send_text(self, text: str) -> None:
+        # Send text fallback if voice is disabled
+        pass
+
+    async def receive_events(self) -> AsyncIterator[Any]:
+        # Yield incoming events from your agent (e.g., transcripts, speech states)
+        yield {
+            "type": "agent_response",
+            "agent_response": {
+                "content": "Hello, how can I help you?"
+            }
+        }
+```
+
+You can then swap this class into `personaforge/backend/app/cli/main.py` or your test runner script.
