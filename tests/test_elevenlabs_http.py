@@ -15,8 +15,8 @@ async def test_elevenlabs_http_provider_flow():
         mock_llm.get_completion = AsyncMock(return_value="Gemini Agent response text")
         mock_llm_prop.__get__ = MagicMock(return_value=mock_llm)
 
-        # Mock the text_to_speech method to avoid actual HTTP requests
-        provider.text_to_speech = AsyncMock(return_value=b"fake_pcm_data")
+        # Mock the _text_to_speech method to avoid actual HTTP requests
+        provider._text_to_speech = AsyncMock(return_value=b"fake_pcm_data")
 
         # 1. Connect
         await provider.connect(
@@ -42,8 +42,8 @@ async def test_elevenlabs_http_provider_flow():
         assert second_event["type"] == "agent_response"
         assert second_event["agent_response"]["content"] == "Gemini Agent response text"
 
-        # Verify text_to_speech was triggered to verify TTS is working
-        provider.text_to_speech.assert_called_once_with("Gemini Agent response text")
+        # Verify _text_to_speech was triggered to verify TTS is working
+        provider._text_to_speech.assert_called_once_with("Gemini Agent response text")
 
         # Cleanup
         await provider.disconnect()
