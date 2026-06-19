@@ -719,6 +719,7 @@ def ci(scenario):
         click.echo("Error: No scenario specified and none found in scenarios/ folder.")
         sys.exit(1)
 
+    os.makedirs("reports", exist_ok=True)
     old_reports = sorted(
         [
             f

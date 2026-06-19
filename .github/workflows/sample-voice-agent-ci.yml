@@ -34,5 +34,7 @@ jobs:
         PERSONAFORGE_CI_DRY_RUN: "true"
       run: |
         export PYTHONPATH=$PYTHONPATH:.
+        # Initialize project layout and folders
+        python3 personaforge/backend/app/cli/main.py init
         # Run CI quality gates check using local SQLite
         python3 personaforge/backend/app/cli/main.py ci --scenario scenarios/telecom_refund.yaml
