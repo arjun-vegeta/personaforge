@@ -1,8 +1,10 @@
 import os
+import asyncio
 from typing import List, Dict, Optional, Type
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
+from google.genai.errors import ClientError
 
 
 class LLMClient:
@@ -23,6 +25,36 @@ class LLMClient:
             )
         return self._client
 
+    async def _call_with_retry(
+        self, func, max_retries: int = 5, base_delay: float = 3.0
+    ):
+        for attempt in range(max_retries):
+            try:
+                return await func()
+            except ClientError as e:
+                if e.code == 429 or "429" in str(e):
+                    wait_time = base_delay * (2**attempt)
+                    print(
+                        f"  (Gemini Rate limit 429. Retrying in {wait_time:.1f}s... attempt {attempt + 1}/{max_retries})"
+                    )
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise e
+            except Exception as e:
+                if (
+                    "429" in str(e)
+                    or "quota" in str(e).lower()
+                    or "limit" in str(e).lower()
+                ):
+                    wait_time = base_delay * (2**attempt)
+                    print(
+                        f"  (Gemini Rate limit: {e}. Retrying in {wait_time:.1f}s... attempt {attempt + 1}/{max_retries})"
+                    )
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise e
+        return await func()
+
     async def get_completion(
         self,
         messages: List[Dict[str, str]],
@@ -42,9 +74,12 @@ class LLMClient:
             temperature=temperature, max_output_tokens=max_tokens
         )
 
-        response = await self.client.aio.models.generate_content(
-            model=self.model_name, contents=prompt, config=config
-        )
+        async def make_call():
+            return await self.client.aio.models.generate_content(
+                model=self.model_name, contents=prompt, config=config
+            )
+
+        response = await self._call_with_retry(make_call)
         return response.text
 
     async def get_structured_completion(
@@ -67,7 +102,10 @@ class LLMClient:
             response_schema=response_format,
         )
 
-        response = await self.client.aio.models.generate_content(
-            model=self.model_name, contents=prompt, config=config
-        )
+        async def make_call():
+            return await self.client.aio.models.generate_content(
+                model=self.model_name, contents=prompt, config=config
+            )
+
+        response = await self._call_with_retry(make_call)
         return response_format.model_validate_json(response.text)
