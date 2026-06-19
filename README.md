@@ -43,18 +43,21 @@ Comprehensive user guides are available in the `docs/` directory:
 
 ### 1. Installation
 
+You can install the CLI tool directly from PyPI:
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/personaforge.git
-cd personaforge
+pip install personaforge
+```
 
-# Install dependencies
+Or install from source for development and web studio access:
+```bash
+git clone https://github.com/arjun-vegeta/personaforge.git
+cd personaforge
 pip install -r requirements.txt
 ```
 
 ### 2. Configure API Keys
 
-Create a .env file in the root directory:
+Create a `.env` file in your project directory:
 
 ```env
 ELEVENLABS_API_KEY=your_key_here
@@ -64,20 +67,19 @@ GOOGLE_API_KEY=your_gemini_key_here
 ### 3. Initialize Project
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
-python3 -m personaforge.backend.app.cli.main init
+personaforge init
 ```
 
 ### 4. Run a Scenario
 
 ```bash
-python3 -m personaforge.backend.app.cli.main run scenarios/telecom_refund.yaml
+personaforge run scenarios/telecom_refund.yaml
 ```
 
 ### 5. Check for Regressions (CI Mode)
 
 ```bash
-python3 -m personaforge.backend.app.cli.main ci --scenario scenarios/telecom_refund.yaml
+personaforge ci --scenario scenarios/telecom_refund.yaml
 ```
 
 ## Dashboard
