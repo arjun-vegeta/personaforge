@@ -51,3 +51,45 @@ async def test_llm_get_structured_completion(mock_genai_client):
 
     assert result.answer == "Structured Response"
     assert isinstance(result, MockResponse)
+
+
+@pytest.mark.asyncio
+async def test_llm_retry_on_429(mock_genai_client, mocker):
+    client = LLMClient(api_key="test-key")
+
+    # Mock sleep to run instantly
+    mock_sleep = mocker.patch("asyncio.sleep", AsyncMock())
+
+    from google.genai.errors import ClientError
+
+    # Simulate ClientError with 429 status code
+    error_response = MagicMock()
+    error_response.status_code = 429
+    err = ClientError(429, error_response, "Rate limit exceeded")
+
+    success_response = MagicMock(text="Success Response")
+    mock_genai_client.side_effect = [err, success_response]
+
+    messages = [{"role": "user", "content": "Hello"}]
+    response = await client.get_completion(messages)
+
+    assert response == "Success Response"
+    assert mock_genai_client.call_count == 2
+    mock_sleep.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_llm_retry_on_generic_429_exception(mock_genai_client, mocker):
+    client = LLMClient(api_key="test-key")
+    mock_sleep = mocker.patch("asyncio.sleep", AsyncMock())
+
+    err = Exception("Rate limit 429 error")
+    success_response = MagicMock(text="Success Generic Response")
+    mock_genai_client.side_effect = [err, success_response]
+
+    messages = [{"role": "user", "content": "Hello"}]
+    response = await client.get_completion(messages)
+
+    assert response == "Success Generic Response"
+    assert mock_genai_client.call_count == 2
+    mock_sleep.assert_called_once()
