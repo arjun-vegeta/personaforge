@@ -1,6 +1,6 @@
 # This is a sample workflow that runs PersonaForge tests using local SQLite
 # You can trigger this manually from the Actions tab on GitHub.
-name: PersonaForge Manual CI
+name: PersonaForge Synthetic Customer Simulator
 
 on:
   workflow_dispatch: # Allows manual triggering from the GitHub UI
