@@ -129,9 +129,10 @@ Policies are plain Markdown files listing business rules, compliance instruction
 
 ## 5. Custom Voice Providers
 
-By default, PersonaForge comes with:
-- **`MockProvider`**: Runs in dry-run mode (`--dry-run`), allowing you to test configurations, state machines, and LLM behaviors without any ElevenLabs subscription or API charges.
-- **`ElevenLabsProvider`**: Uses ElevenLabs Conversational AI WebSockets for real-time live runs.
+By default, PersonaForge comes with three built-in providers:
+- **`mock`** (MockProvider): Runs in dry-run mode (`--dry-run`), allowing you to test configurations, state machines, and LLM behaviors without any ElevenLabs subscription or API charges.
+- **`elevenlabs`** (ElevenLabsProvider): Connects directly to ElevenLabs Conversational AI over WebSockets for real-time streaming. *Requires an ElevenLabs paid subscription tier.*
+- **`elevenlabs_http`** (ElevenLabsHTTPProvider): Runs live tests using local Gemini completions and the standard ElevenLabs HTTP POST Text-to-Speech REST API. *Works on the ElevenLabs free tier, bypassing the 3001 WebSocket connection error.*
 
 ### Implementing a Custom Provider
 
