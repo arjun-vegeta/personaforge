@@ -1,6 +1,6 @@
 agent:
   agent_id: agent_7101kvgg3enxfg5tjk6jc0ahv0d7
-  provider: elevenlabs
+  provider: elevenlabs_http
 evaluation:
   completion_threshold: 95
   escalation_threshold: 90
