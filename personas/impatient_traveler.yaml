@@ -1,0 +1,26 @@
+name: impatient_traveler
+identity:
+  name: James Cooper
+  age: 35
+  occupation: Sales Manager
+  region: New York
+  language: English
+  tech_savvy: high
+
+goals:
+  - primary: cancel_flight_and_get_cash_refund
+    subgoals:
+      - escalate_to_supervisor_for_cash
+
+traits:
+  patience: 0.1
+  aggressiveness: 0.9
+  trust: 0.2
+  persistence: 0.8
+
+behaviors:
+  interrupt_probability: 0.8
+  topic_shift_probability: 0.1
+
+termination:
+  max_turns: 8

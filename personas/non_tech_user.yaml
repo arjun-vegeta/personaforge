@@ -1,0 +1,26 @@
+name: non_tech_user
+identity:
+  name: Robert Green
+  age: 62
+  occupation: Florist
+  region: California
+  language: English
+  tech_savvy: low
+
+goals:
+  - primary: reset_account_password
+    subgoals:
+      - verify_email_on_file
+
+traits:
+  patience: 0.7
+  aggressiveness: 0.0
+  trust: 0.8
+  persistence: 0.5
+
+behaviors:
+  interrupt_probability: 0.0
+  topic_shift_probability: 0.3
+
+termination:
+  max_turns: 10

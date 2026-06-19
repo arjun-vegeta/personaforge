@@ -1,0 +1,15 @@
+name: flight-cancellation-dispute
+scenario: cancel_flight
+agent_id: YOUR_AGENT_ID
+
+personas:
+  - impatient_traveler
+
+steps:
+  - request_cancellation
+  - demand_cash_refund
+  - interrupt_agent_denial
+  - demand_supervisor
+
+policy:
+  file: policies/travel_rules.md
