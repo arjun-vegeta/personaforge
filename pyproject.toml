@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "personaforge"
+version = "1.0.0"
+authors = [
+    { name = "Arjun", email = "arjun-vegeta@users.noreply.github.com" }
+]
+description = "Synthetic customer generation and reliability testing platform for conversational voice agents."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Framework :: FastAPI",
+]
+dependencies = [
+    "fastapi",
+    "sqlmodel",
+    "asyncpg",
+    "pydantic",
+    "pydantic-settings",
+    "google-genai",
+    "websockets",
+    "httpx",
+    "python-dotenv",
+    "rq",
+    "redis",
+    "click",
+    "sqlalchemy",
+    "uvicorn",
+    "gunicorn",
+    "PyYAML",
+    "aiosqlite"
+]
+
+[project.scripts]
+personaforge = "personaforge.backend.app.cli.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["personaforge*"]
