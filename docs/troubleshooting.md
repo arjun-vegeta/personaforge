@@ -38,15 +38,16 @@ When launching a live scenario run, the connection immediately drops with a WebS
 During large evaluations (e.g. evaluating 50 conversations at once), the Judge or Persona Engine throws a 429 Rate Limit error from Google AI Studio.
 
 ### The Solution
-1. **Reduce Concurrency**: Lower the concurrency rate in your run command:
+1. **Built-in Retry Mechanism**: The PersonaForge backend includes a built-in exponential backoff retry handler (`_call_with_retry`) in the `LLMClient`. On receiving a `429 RESOURCE_EXHAUSTED` error, the client automatically pauses and retries (up to 5 attempts, doubling the wait time on each attempt).
+2. **Reduce Concurrency**: Lower the concurrency rate in your run command:
    ```bash
    python3 -m personaforge.backend.app.cli.main run scenarios/telecom_refund.yaml --concurrency 2
    ```
-2. **Use Batch Tasks**: Offload evaluations to the background task queue worker using Redis:
+3. **Use Batch Tasks**: Offload evaluations to the background task queue worker using Redis:
    ```bash
    python3 -m personaforge.backend.app.cli.main worker --queue evaluation
    ```
-3. **Upgrade Tier**: Shift from the free Gemini Tier to a pay-as-you-go billing plan in Google AI Studio to increase your Requests Per Minute (RPM) limits.
+4. **Upgrade Tier**: Shift from the free Gemini Tier to a pay-as-you-go billing plan in Google AI Studio to increase your Requests Per Minute (RPM) limits.
 
 ---
 
