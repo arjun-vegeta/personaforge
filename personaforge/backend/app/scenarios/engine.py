@@ -1,6 +1,7 @@
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 
+
 class ScenarioConfig(BaseModel):
     name: str
     description: str
@@ -8,6 +9,7 @@ class ScenarioConfig(BaseModel):
     success_conditions: List[str] = []
     failure_conditions: List[str] = []
     policy_doc: Optional[str] = None
+
 
 class ScenarioEngine:
     def __init__(self, config: ScenarioConfig):
