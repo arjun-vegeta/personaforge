@@ -129,6 +129,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/build-docs/
 
 # mypy
 .mypy_cache/
@@ -152,6 +153,7 @@ personaforge.db
 artifacts/
 reports/
 .agents/
+.antigravitycli/
 .DS_Store
 .gemini/
 *.log
