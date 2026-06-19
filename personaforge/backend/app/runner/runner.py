@@ -65,7 +65,28 @@ class ConversationRunner:
                     await self.db_session.rollback()
                     self.db_session = None
 
-        await self.provider.connect(self.agent_id)
+        import os
+
+        # Read policy if file is in scenario_config
+        policy_content = ""
+        if (
+            "policy" in self.scenario_config
+            and "file" in self.scenario_config["policy"]
+        ):
+            try:
+                policy_file = self.scenario_config["policy"]["file"]
+                if os.path.exists(policy_file):
+                    with open(policy_file, "r") as f:
+                        policy_content = f.read()
+            except Exception:
+                pass
+
+        await self.provider.connect(
+            self.agent_id,
+            policy_content=policy_content,
+            system_prompt="Handle the customer query according to the provided policies.",
+            greeting="Hello, thank you for calling. How can I help you today?",
+        )
 
         try:
             async for event in self.provider.receive_events():

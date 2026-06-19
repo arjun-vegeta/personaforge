@@ -29,7 +29,7 @@ async def _run_conversation_internal(
         from personaforge.backend.app.integrations.base import VoiceAgentProvider
 
         class MockProvider(VoiceAgentProvider):
-            async def connect(self, agent_id: str):
+            async def connect(self, agent_id: str, **kwargs):
                 pass
 
             async def disconnect(self):
@@ -64,7 +64,30 @@ async def _run_conversation_internal(
 
         provider = MockProvider()
     else:
-        provider = ElevenLabsProvider()
+        provider_type = "elevenlabs"
+        if os.path.exists("personaforge.yaml"):
+            try:
+                with open("personaforge.yaml", "r") as f:
+                    global_config = yaml.safe_load(f)
+                    provider_type = global_config.get("agent", {}).get(
+                        "provider", "elevenlabs"
+                    )
+            except Exception:
+                pass
+
+        if scenario_config and isinstance(scenario_config, dict):
+            provider_type = scenario_config.get("agent", {}).get(
+                "provider", provider_type
+            )
+
+        if provider_type == "elevenlabs_http":
+            from personaforge.backend.app.integrations.elevenlabs import (
+                ElevenLabsHTTPProvider,
+            )
+
+            provider = ElevenLabsHTTPProvider()
+        else:
+            provider = ElevenLabsProvider()
 
     runner = ConversationRunner(
         conversation_id=uuid.uuid4(),

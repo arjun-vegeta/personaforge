@@ -236,7 +236,7 @@ async def execute_run_logic(
                     engine = MockPersonaEngine(p_data)
 
                     class MockProvider(VoiceAgentProvider):
-                        async def connect(self, agent_id: str):
+                        async def connect(self, agent_id: str, **kwargs):
                             pass
 
                         async def disconnect(self):
@@ -265,7 +265,22 @@ async def execute_run_logic(
                     provider = MockProvider()
                 else:
                     engine = PersonaEngine(p_data)
-                    provider = ElevenLabsProvider()
+                    provider_type = config.get("agent", {}).get(
+                        "provider", "elevenlabs"
+                    )
+                    if scenario and isinstance(scenario, dict):
+                        provider_type = scenario.get("agent", {}).get(
+                            "provider", provider_type
+                        )
+
+                    if provider_type == "elevenlabs_http":
+                        from personaforge.backend.app.integrations.elevenlabs import (
+                            ElevenLabsHTTPProvider,
+                        )
+
+                        provider = ElevenLabsHTTPProvider()
+                    else:
+                        provider = ElevenLabsProvider()
 
                 runner = ConversationRunner(
                     conversation_id=uuid.uuid4(),
