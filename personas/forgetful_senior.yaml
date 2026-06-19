@@ -1,0 +1,26 @@
+name: forgetful_senior
+identity:
+  name: Arthur Miller
+  age: 78
+  occupation: Retired Postman
+  region: Ohio
+  language: English
+  tech_savvy: low
+
+goals:
+  - primary: book_cardiologist_appointment
+    subgoals:
+      - confirm_parking_directions
+
+traits:
+  patience: 0.8
+  aggressiveness: 0.1
+  trust: 0.9
+  persistence: 0.6
+
+behaviors:
+  interrupt_probability: 0.1
+  topic_shift_probability: 0.5
+
+termination:
+  max_turns: 12

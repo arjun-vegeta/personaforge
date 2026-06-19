@@ -1,0 +1,15 @@
+name: clinic-appointment-scheduling
+scenario: book_appointment
+agent_id: YOUR_AGENT_ID
+
+personas:
+  - forgetful_senior
+
+steps:
+  - request_appointment
+  - change_appointment_date
+  - ask_about_parking
+  - confirm_booking
+
+policy:
+  file: policies/scheduling_rules.md
