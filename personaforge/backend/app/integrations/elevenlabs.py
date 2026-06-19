@@ -174,7 +174,7 @@ class ElevenLabsHTTPProvider(VoiceAgentProvider):
         # Generate voice over HTTP TTS to verify voice generation works and save to artifacts
         if self.api_key:
             try:
-                await self.text_to_speech(agent_reply)
+                await self._text_to_speech(agent_reply)
             except Exception as e:
                 # Log warning, don't block conversation flow
                 print(f"  (HTTP TTS Generation warning: {e})")
@@ -193,7 +193,7 @@ class ElevenLabsHTTPProvider(VoiceAgentProvider):
             yield event
             self.event_queue.task_done()
 
-    async def text_to_speech(
+    async def _text_to_speech(
         self, text: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL"
     ) -> bytes:
         """Convert text to PCM audio using ElevenLabs TTS HTTP API."""

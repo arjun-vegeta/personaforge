@@ -89,10 +89,12 @@ class ConversationRunner:
         )
 
         try:
-            async for event in self.provider.receive_events():
-                if not self.is_running:
+            event_iterator = self.provider.receive_events()
+            while self.is_running:
+                try:
+                    event = await event_iterator.__anext__()
+                except StopAsyncIteration:
                     break
-
                 await self.handle_event(event)
         finally:
             if self.db_session:
