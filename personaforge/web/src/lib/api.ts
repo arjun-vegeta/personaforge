@@ -1,4 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const rawUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE_URL = rawUrl.endsWith("/api") ? rawUrl : `${rawUrl}/api`;
 
 export interface Stats {
   total_runs: number;

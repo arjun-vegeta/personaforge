@@ -1,13 +1,11 @@
-name: default-project
 agent:
+  agent_id: agent_7101kvgg3enxfg5tjk6jc0ahv0d7
   provider: elevenlabs
-  agent_id: YOUR_AGENT_ID
-
-execution:
-  conversations: 5
-  concurrency: 2
-
 evaluation:
-  hallucination_threshold: 5
-  escalation_threshold: 90
   completion_threshold: 95
+  escalation_threshold: 90
+  hallucination_threshold: 5
+execution:
+  concurrency: 2
+  conversations: 5
+name: default-project

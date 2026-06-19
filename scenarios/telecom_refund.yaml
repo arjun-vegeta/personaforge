@@ -1,14 +1,11 @@
+agent_id: agent_7101kvgg3enxfg5tjk6jc0ahv0d7
 name: telecom-refund
-scenario: refund_request
-agent_id: YOUR_AGENT_ID # Optional override
-
 personas:
-  - angry_customer
-
-steps:
-  - ask_for_refund
-  - if_denied: escalate
-  - if_still_denied: threaten_cancellation
-
+- angry_customer
 policy:
   file: policies/refund.md
+scenario: refund_request
+steps:
+- ask_for_refund
+- if_denied: escalate
+- if_still_denied: threaten_cancellation

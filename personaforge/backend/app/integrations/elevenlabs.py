@@ -22,7 +22,7 @@ class ElevenLabsProvider(VoiceAgentProvider):
         if self.api_key:
             headers["xi-api-key"] = self.api_key
 
-        self.ws = await websockets.connect(url, extra_headers=headers)
+        self.ws = await websockets.connect(url, additional_headers=headers)
         
         # Send initiation data if provided
         init_data = kwargs.get("initiation_data", {})
@@ -74,7 +74,7 @@ class ElevenLabsProvider(VoiceAgentProvider):
                 }))
             yield data
 
-    async def text_to_speech(self, text: str, voice_id: str = "21m00Tcm4TlvDq8ikWAM") -> bytes:
+    async def text_to_speech(self, text: str, voice_id: str = "EXAVITQu4vr4xnSDxMaL") -> bytes:
         """Convert text to PCM audio using ElevenLabs TTS API."""
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream"
         

@@ -23,6 +23,8 @@ class ConversationRunner:
         self.provider = provider
         self.persona_engine = persona_engine
         self.db_session = db_session
+        if db_session and not hasattr(db_session, "_lock"):
+            db_session._lock = asyncio.Lock()
         self.scenario_config = scenario_config or {}
         self.history: List[Dict[str, str]] = []
         self.turn_count = 0
@@ -39,19 +41,26 @@ class ConversationRunner:
         self.is_running = True
         
         if self.db_session:
-            db_conv = DBConversation(
-                id=self.conversation_id,
-                test_run_id=self.test_run_id,
-                agent_id=uuid.UUID(self.agent_id) if "-" in self.agent_id else None, 
-                status="active",
-                persona_id=self.persona_engine.persona.name
-            )
-            self.db_session.add(db_conv)
-            try:
-                await self.db_session.commit()
-            except Exception:
-                await self.db_session.rollback()
-                self.db_session = None
+            async with self.db_session._lock:
+                agent_uuid = None
+                if self.agent_id:
+                    try:
+                        agent_uuid = uuid.UUID(self.agent_id)
+                    except ValueError:
+                        pass
+                db_conv = DBConversation(
+                    id=self.conversation_id,
+                    test_run_id=self.test_run_id,
+                    agent_id=agent_uuid, 
+                    status="active",
+                    persona_id=self.persona_engine.persona.name
+                )
+                self.db_session.add(db_conv)
+                try:
+                    await self.db_session.commit()
+                except Exception:
+                    await self.db_session.rollback()
+                    self.db_session = None
 
         await self.provider.connect(self.agent_id)
         
@@ -63,17 +72,18 @@ class ConversationRunner:
                 await self.handle_event(event)
         finally:
             if self.db_session:
-                db_conv = await self.db_session.get(DBConversation, self.conversation_id)
-                if db_conv:
-                    db_conv.status = "completed"
-                    db_conv.ended_at = datetime.utcnow()
-                    db_conv.interruption_count = self.interruption_count
-                    db_conv.interruption_recovery_count = self.interruption_recovery_count
-                    if self.total_latencies:
-                        db_conv.avg_latency = sum(self.total_latencies) / len(self.total_latencies)
-                    
-                    self.db_session.add(db_conv)
-                    await self.db_session.commit()
+                async with self.db_session._lock:
+                    db_conv = await self.db_session.get(DBConversation, self.conversation_id)
+                    if db_conv:
+                        db_conv.status = "completed"
+                        db_conv.ended_at = datetime.utcnow()
+                        db_conv.interruption_count = self.interruption_count
+                        db_conv.interruption_recovery_count = self.interruption_recovery_count
+                        if self.total_latencies:
+                            db_conv.avg_latency = sum(self.total_latencies) / len(self.total_latencies)
+                        
+                        self.db_session.add(db_conv)
+                        await self.db_session.commit()
             
             await self.provider.disconnect()
 
@@ -139,17 +149,18 @@ class ConversationRunner:
         self.history.append({"role": role, "content": content})
         
         if self.db_session:
-            msg = Message(
-                conversation_id=self.conversation_id,
-                role=role,
-                content=content,
-                turn_number=self.turn_count
-            )
-            self.db_session.add(msg)
-            try:
-                await self.db_session.commit()
-            except Exception:
-                await self.db_session.rollback()
+            async with self.db_session._lock:
+                msg = Message(
+                    conversation_id=self.conversation_id,
+                    role=role,
+                    content=content,
+                    turn_number=self.turn_count
+                )
+                self.db_session.add(msg)
+                try:
+                    await self.db_session.commit()
+                except Exception:
+                    await self.db_session.rollback()
 
     async def stop(self):
         self.is_running = False

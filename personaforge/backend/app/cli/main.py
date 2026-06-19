@@ -7,8 +7,9 @@ import yaml
 import json
 from datetime import datetime
 from typing import List, Optional, Dict, Any
+from personaforge.backend.app.integrations.base import VoiceAgentProvider
 from personaforge.backend.app.integrations.elevenlabs import ElevenLabsProvider
-from personaforge.backend.app.personas.engine import PersonaEngine, Persona, Identity, Goal, Traits
+from personaforge.backend.app.personas.engine import PersonaEngine, Persona, Identity, Goal, Traits, BehaviorAction, BehaviorActionType
 from personaforge.backend.app.runner.runner import ConversationRunner
 from personaforge.backend.app.runner.orchestrator import TestOrchestrator
 from personaforge.backend.app.judge.evaluator import JudgeEngine
@@ -187,7 +188,6 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
                 p_data = load_persona(p_name)
                 
                 if dry_run:
-                    from personaforge.backend.app.personas.engine import PersonaEngine, BehaviorAction, BehaviorActionType
                     class MockPersonaEngine(PersonaEngine):
                         async def update_state(self, *args, **kwargs): pass
                         async def determine_action(self, *args, **kwargs):
@@ -196,7 +196,6 @@ async def execute_run_logic(scenario_file, personas_override=None, concurrency_o
                             return "Mock customer response."
                     engine = MockPersonaEngine(p_data)
                     
-                    from personaforge.backend.app.integrations.base import VoiceAgentProvider
                     class MockProvider(VoiceAgentProvider):
                         async def connect(self, agent_id: str): pass
                         async def disconnect(self): pass
@@ -411,18 +410,7 @@ evaluation:
 def run(scenario_file, persona, concurrency, count, dry_run):
     """Run a scenario from a YAML file."""
     async def run_internal():
-        if dry_run:
-            # Skip DB entirely for dry runs in this logic
-            await execute_run_logic(
-                scenario_file, 
-                list(persona) if persona else None, 
-                concurrency, 
-                count, 
-                dry_run=True
-            )
-            return
-
-        # Normal run with DB
+        # Run with DB logging enabled
         try:
             await init_db()
             async for session in get_session():
@@ -443,7 +431,7 @@ def run(scenario_file, persona, concurrency, count, dry_run):
                         list(persona) if persona else None, 
                         concurrency, 
                         count, 
-                        dry_run=False,
+                        dry_run=dry_run,
                         db_session=session,
                         test_run_id=test_run.id
                     )
@@ -703,7 +691,7 @@ def ci(scenario):
 def worker(queue):
     """Start a background worker for processing tasks."""
     from redis import Redis
-    from rq import Worker, Queue, Connection
+    from rq import Worker, Queue
     
     redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
     try:
@@ -718,9 +706,8 @@ def worker(queue):
         queues = [f"{queue}_queue"]
         
     click.echo(f"Starting workers for queues: {', '.join(queues)}")
-    with Connection(conn):
-        worker = Worker(queues)
-        worker.work()
+    worker = Worker(queues, connection=conn)
+    worker.work()
 
 if __name__ == "__main__":
     cli()
